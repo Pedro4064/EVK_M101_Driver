@@ -46,4 +46,6 @@ typedef struct M10_GNSS{
 
 void M10GnssDriverInit(I2C_HandleTypeDef* i2c_handle, m10_gnss* m10_module);
 
+void M10GnssDriverReadData(void);
+
 #endif
