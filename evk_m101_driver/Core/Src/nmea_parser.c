@@ -11,9 +11,11 @@ char NmeaParserCompareOriginId(nmea_caller_id* message_origin, nmea_caller_id* t
     return 1;
 }
 
-void NmeaGetNextFieldRaw(m10_gnss* m10_gnss_module, char (*raw_stream_buffer)[NMEA_RAW_BUFFER_SIZE]){
+nmea_raw_field_metadata NmeaGetNextFieldRaw(m10_gnss* m10_gnss_module, char (*raw_stream_buffer)[NMEA_RAW_BUFFER_SIZE]){
     char received_buffer;
     char finished_reading;
+    char end_of_message;
+    nmea_raw_field_metadata metadata;
 
     for (int buffer_index = 0; buffer_index < NMEA_RAW_BUFFER_SIZE; buffer_index++)
     {
@@ -24,14 +26,19 @@ void NmeaGetNextFieldRaw(m10_gnss* m10_gnss_module, char (*raw_stream_buffer)[NM
         }
 
         HAL_I2C_Mem_Read(m10_gnss_module->i2c_handle, m10_gnss_module->i2c_address, STREAM_BUFFER_REGISTER, STREAM_BUFFER_REGISTER_SIZE, &received_buffer, 1, 1000);
-        if(received_buffer == ',' || received_buffer == '\r' || received_buffer == '\n'){
+        if(received_buffer == ','){
             finished_reading = 1;
-            continue;
+        }
+        else if(received_buffer == '\r' || received_buffer == '\n'){
+            finished_reading = 1;
+            end_of_message = 1;
         }
         else{
             (*raw_stream_buffer)[buffer_index] = received_buffer;
+            metadata.raw_field_length = buffer_index;
         }
-
     }
-    
+
+    metadata.field_status = (end_of_message)?END_OF_MESSAGE:metadata.raw_field_length == 0;
+    return metadata;
 }
