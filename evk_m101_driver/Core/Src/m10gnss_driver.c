@@ -7,6 +7,8 @@
 #define STREAM_BUFFER_REGISTER_SIZE 1  // Address of the stream buffer register
 
 #define MESSAGE_START '$'
+#define NUM_PARSING_TABLE_ENTRIES 2
+#define NMEA_CALLER_ID_SIZE 5
 
 
 typedef unsigned char nmea_caller_id[6];
@@ -20,7 +22,7 @@ typedef struct NMEA_MESSAGE_PARSING_TABLE_ENTRY
 void M10GnssDriverRmcParser(nmea_caller_id* nmea_origin_id);
 void M10GnssDriverGsvParser(nmea_caller_id* nmea_origin_id);
 
-nmea_message_parsing_table_entry nmea_message_parsing_table[2] = {
+nmea_message_parsing_table_entry nmea_message_parsing_table[NUM_PARSING_TABLE_ENTRIES] = {
 
                                                                 {
                                                                     .message_origin = "GNRMC",
@@ -40,6 +42,36 @@ void M10GnssDriverInit(I2C_HandleTypeDef* i2c_handle, m10_gnss* m10_module){
     m10_gnss_module = m10_module;
 }
 
+void M10GnssDriverNmeaDiscardMessage(void){
+
+}
+
+char M10GnssDriverNmeaCompareOriginId(nmea_caller_id* message_origin, nmea_caller_id* table_origin){
+    for (int i = 0; i < NMEA_CALLER_ID_SIZE; i++){
+
+        if((*message_origin)[i] != (*table_origin)[i] && (*table_origin)[i] != '*')
+            return 0;
+    }
+    
+    return 1;
+}
+
+void M10GnssDriverNmeaMessageDelegator(nmea_caller_id* nmea_origin_id){
+    for (int parsing_table_index = 0; parsing_table_index < NUM_PARSING_TABLE_ENTRIES; parsing_table_index++){
+        nmea_message_parsing_table_entry nmea_callback_entry = nmea_message_parsing_table[parsing_table_index];
+
+        char nmea_caller_compare_result = M10GnssDriverNmeaCompareOriginId(nmea_origin_id, nmea_callback_entry.message_origin);
+        if(nmea_caller_compare_result != 0)
+            continue;
+
+        (*nmea_callback_entry.parser_function)(nmea_origin_id);
+        return;
+    }
+
+    // If there was no match in the table, discard the incoming message
+    M10GnssDriverNmeaDiscardMessage();
+    
+}
 
 void M10GnssDriverReadData(void){
     unsigned char stream_buffer;
@@ -57,7 +89,7 @@ void M10GnssDriverReadData(void){
             nmea_caller_id_index = 0;
         }
         else if(stream_buffer == ','){
-
+            M10GnssDriverNmeaMessageDelegator(message_origin);
         }
         else{
             message_origin[nmea_caller_id_index] = stream_buffer;
@@ -67,7 +99,7 @@ void M10GnssDriverReadData(void){
 
 
     }
-    while (stream_buffer != STREAM_BUFFER_EMPTY)
+    while (stream_buffer != STREAM_BUFFER_EMPTY);
     
 }
 
