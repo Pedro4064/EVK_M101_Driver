@@ -3,6 +3,11 @@
 
 #include  "i2c.h"
 
+#define I2C_ADDRESS 0x84             // Default address for EVK-M101 module
+#define STREAM_BUFFER_EMPTY 0xFF     // Value returned by stream buffer when empty
+#define STREAM_BUFFER_REGISTER 0xFF  // Address of the stream buffer register
+#define STREAM_BUFFER_REGISTER_SIZE 1  // Address of the stream buffer register
+
 typedef struct AVAILABLE_SATELITES_TABLE{
     unsigned char GP;
     unsigned char GL;
@@ -42,9 +47,12 @@ typedef struct M10_GNSS{
     gnss_numeric_measurement speed_over_ground_knots;
     utc_date_time time_of_sample;
     char buffer_empty;
+    
+    I2C_HandleTypeDef* i2c_handle;
+    int i2c_address;
 } m10_gnss;
 
-void M10GnssDriverInit(I2C_HandleTypeDef* i2c_handle, m10_gnss* m10_module);
+void M10GnssDriverInit(m10_gnss* m10_module);
 
 void M10GnssDriverReadData(void);
 
