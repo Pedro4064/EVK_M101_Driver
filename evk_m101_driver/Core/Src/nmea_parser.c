@@ -57,8 +57,8 @@ void NmeaParseUtcTime(utc_date_time* date_time, char (*raw_stream_buffer)[NMEA_R
     date_time->minute  = CHAR_TO_NUMERIC(raw_stream_buffer, 2) * 10;
     date_time->minute += CHAR_TO_NUMERIC(raw_stream_buffer, 3);
 
-    date_time->second  = CHAR_TO_NUMERIC(raw_stream_buffer, 4) * 10;
-    date_time->second += CHAR_TO_NUMERIC(raw_stream_buffer, 5);
-    date_time->second += CHAR_TO_NUMERIC(raw_stream_buffer, 7) / 10;
-    date_time->second += CHAR_TO_NUMERIC(raw_stream_buffer, 8) / 100;
+    date_time->second  = CHAR_TO_NUMERIC(raw_stream_buffer, 4) * 10.0;
+    date_time->second += CHAR_TO_NUMERIC(raw_stream_buffer, 5) * 1.0;
+    date_time->second += CHAR_TO_NUMERIC(raw_stream_buffer, 7) / 10.0;
+    date_time->second += CHAR_TO_NUMERIC(raw_stream_buffer, 8) / 100.0;
 }
