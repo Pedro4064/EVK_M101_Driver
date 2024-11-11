@@ -30,6 +30,8 @@ typedef struct UTC_DATE_TIME{
     unsigned char hour;
     unsigned char minute;
     float second;
+
+    char is_available;
 } utc_date_time;
 
 typedef struct GNSS_LAT_LONG_MEASUREMENT{

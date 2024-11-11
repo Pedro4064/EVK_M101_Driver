@@ -27,7 +27,6 @@ nmea_message_parsing_table_entry nmea_message_parsing_table[NUM_PARSING_TABLE_EN
                                                                 }
                                                             };
 
-I2C_HandleTypeDef* i2c_handler;
 m10_gnss* m10_gnss_module;
 
 void M10GnssDriverInit(m10_gnss* m10_module){
@@ -87,6 +86,67 @@ void M10GnssDriverReadData(void){
 
 void M10GnssDriverRmcParser(nmea_caller_id* nmea_origin_id){
 
+    char raw_field_data[20];
+    for (int field_index = 0; field_index < 15; field_index++){
+        nmea_raw_field_metadata field_metadata = NmeaGetNextFieldRaw(m10_gnss_module, &raw_field_data);
+
+        switch (field_index){
+            case 0:
+                if(field_metadata.field_status != VALID || field_metadata.raw_field_length != 9){
+                    m10_gnss_module->time_of_sample.is_available = 0;
+                    continue;
+                }
+
+                NmeaParseUtcTime(&(m10_gnss_module->time_of_sample), &raw_field_data);
+                break;
+
+            case 1:
+                break;
+
+            case 2:
+                break;
+
+            case 3:
+                break;
+
+            case 4:
+                break;
+
+            case 5:
+                break;
+
+            case 6:
+                break;
+
+            case 7:
+                break;
+
+            case 8:
+                break;
+
+            case 9:
+                break;
+
+            case 10:
+                break;
+
+            case 11:
+                break;
+
+            case 12:
+                break;
+
+            case 13:
+                break;
+
+            case 14:
+                break;
+
+            default:
+                break;
+        }
+    }
+    
 }
 
 void M10GnssDriverGsvParser(nmea_caller_id* nmea_origin_id){
