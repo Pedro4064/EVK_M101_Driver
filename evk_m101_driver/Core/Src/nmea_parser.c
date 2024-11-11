@@ -29,7 +29,7 @@ nmea_raw_field_metadata NmeaGetNextFieldRaw(m10_gnss* m10_gnss_module, char (*ra
         }
 
         HAL_I2C_Mem_Read(m10_gnss_module->i2c_handle, m10_gnss_module->i2c_address, STREAM_BUFFER_REGISTER, STREAM_BUFFER_REGISTER_SIZE, &received_buffer, 1, 1000);
-        if(received_buffer == ','){
+        if(received_buffer == ',' || received_buffer == 0xFF){
             finished_reading = 1;
         }
         else if(received_buffer == '\r'){
