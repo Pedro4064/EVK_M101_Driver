@@ -29,7 +29,11 @@ nmea_raw_field_metadata NmeaGetNextFieldRaw(m10_gnss* m10_gnss_module, char (*ra
         if(received_buffer == ','){
             finished_reading = 1;
         }
-        else if(received_buffer == '\r' || received_buffer == '\n'){
+        else if(received_buffer == '\r'){
+            // continue to get the next end of message character
+            continue;
+        }
+        else if(received_buffer == '\n'){
             finished_reading = 1;
             end_of_message = 1;
         }
