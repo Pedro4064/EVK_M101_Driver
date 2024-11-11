@@ -1,5 +1,8 @@
 #include "nmea_parser.h"
+#include "m10gnss_driver.h"
 #include "i2c.h"
+
+#define CHAR_TO_NUMERIC(char_buffer, position) (int)(((*char_buffer)[position])-48)
 
 char NmeaParserCompareOriginId(nmea_caller_id* message_origin, nmea_caller_id* table_origin){
     for (int i = 0; i < NMEA_CALLER_ID_SIZE; i++){
@@ -45,4 +48,17 @@ nmea_raw_field_metadata NmeaGetNextFieldRaw(m10_gnss* m10_gnss_module, char (*ra
 
     metadata.field_status = (end_of_message)?END_OF_MESSAGE:metadata.raw_field_length == 0;
     return metadata;
+}
+
+void NmeaParseUtcTime(utc_date_time* date_time, char (*raw_stream_buffer)[NMEA_RAW_BUFFER_SIZE]){
+    date_time->hour  = CHAR_TO_NUMERIC(raw_stream_buffer, 0) * 10;
+    date_time->hour += CHAR_TO_NUMERIC(raw_stream_buffer, 1);
+
+    date_time->minute  = CHAR_TO_NUMERIC(raw_stream_buffer, 2) * 10;
+    date_time->minute += CHAR_TO_NUMERIC(raw_stream_buffer, 3);
+
+    date_time->second  = CHAR_TO_NUMERIC(raw_stream_buffer, 4) * 10;
+    date_time->second += CHAR_TO_NUMERIC(raw_stream_buffer, 5);
+    date_time->second += CHAR_TO_NUMERIC(raw_stream_buffer, 7) / 10;
+    date_time->second += CHAR_TO_NUMERIC(raw_stream_buffer, 8) / 100;
 }

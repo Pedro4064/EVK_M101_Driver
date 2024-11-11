@@ -18,6 +18,9 @@ typedef struct NMEA_RAW_FIELD_METADATA{
 }nmea_raw_field_metadata;
 
 char NmeaParserCompareOriginId(nmea_caller_id* message_origin, nmea_caller_id* table_origin);
+
 nmea_raw_field_metadata NmeaGetNextFieldRaw(m10_gnss* m10_gnss_module, char (*raw_stream_buffer)[NMEA_RAW_BUFFER_SIZE]);
+
+void NmeaParseUtcTime(utc_date_time* date_time, char (*raw_stream_buffer)[NMEA_RAW_BUFFER_SIZE]);
 
 #endif
