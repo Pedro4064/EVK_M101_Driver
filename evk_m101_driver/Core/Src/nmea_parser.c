@@ -62,3 +62,20 @@ void NmeaParseUtcTime(utc_date_time* date_time, char (*raw_stream_buffer)[NMEA_R
     date_time->second += CHAR_TO_NUMERIC(raw_stream_buffer, 7) / 10.0;
     date_time->second += CHAR_TO_NUMERIC(raw_stream_buffer, 8) / 100.0;
 }
+
+void NmeaParseLatLong(gnss_lat_long_measurement* lat_long_measurement, char (*raw_stream_buffer)[NMEA_RAW_BUFFER_SIZE], nmea_lat_long_parser nmea_parser_option){
+    int buffer_position = (nmea_parser_option==LATITUDE)? 0:1;
+
+    lat_long_measurement->degrees = CHAR_TO_NUMERIC(raw_stream_buffer, buffer_position) * 10;
+    lat_long_measurement->degrees+= CHAR_TO_NUMERIC(raw_stream_buffer, ++buffer_position) * 1;
+    lat_long_measurement->degrees = (nmea_parser_option==LONGITUDE)?CHAR_TO_NUMERIC(raw_stream_buffer, 0) * 100 : lat_long_measurement->degrees;
+
+    lat_long_measurement->minutes = CHAR_TO_NUMERIC(raw_stream_buffer, ++buffer_position) * 10.0;
+    lat_long_measurement->minutes+= CHAR_TO_NUMERIC(raw_stream_buffer, ++buffer_position) * 1.0;
+    buffer_position++; // Skip the . decimal separator
+    lat_long_measurement->minutes+= CHAR_TO_NUMERIC(raw_stream_buffer, ++buffer_position) / 10.0;
+    lat_long_measurement->minutes+= CHAR_TO_NUMERIC(raw_stream_buffer, ++buffer_position) / 100.0;
+    lat_long_measurement->minutes+= CHAR_TO_NUMERIC(raw_stream_buffer, ++buffer_position) / 1000.0;
+    lat_long_measurement->minutes+= CHAR_TO_NUMERIC(raw_stream_buffer, ++buffer_position) / 10000.0;
+    lat_long_measurement->minutes+= CHAR_TO_NUMERIC(raw_stream_buffer, ++buffer_position) / 100000.0;
+}
