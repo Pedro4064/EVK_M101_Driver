@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "nmea_parser.h"
 #include "m10gnss_driver.h"
 #include "i2c.h"
@@ -63,6 +65,18 @@ void NmeaParseUtcTime(utc_date_time* date_time, char (*raw_stream_buffer)[NMEA_R
     date_time->second += CHAR_TO_NUMERIC(raw_stream_buffer, 8) / 100.0;
 }
 
+void NmeaParseUtcDate(utc_date_time* date_time, char (*raw_stream_buffer)[NMEA_RAW_BUFFER_SIZE]){
+    date_time->day  = CHAR_TO_NUMERIC(raw_stream_buffer, 0) * 10;
+    date_time->day += CHAR_TO_NUMERIC(raw_stream_buffer, 1);
+
+    date_time->month  = CHAR_TO_NUMERIC(raw_stream_buffer, 2) * 10;
+    date_time->month += CHAR_TO_NUMERIC(raw_stream_buffer, 3);
+
+
+    date_time->year  = CHAR_TO_NUMERIC(raw_stream_buffer, 4) * 10;
+    date_time->year += CHAR_TO_NUMERIC(raw_stream_buffer, 5);
+}
+
 void NmeaParseLatLong(gnss_lat_long_measurement* lat_long_measurement, char (*raw_stream_buffer)[NMEA_RAW_BUFFER_SIZE], nmea_lat_long_parser nmea_parser_option){
     int buffer_position = (nmea_parser_option==LATITUDE)? 0:1;
 
@@ -78,4 +92,8 @@ void NmeaParseLatLong(gnss_lat_long_measurement* lat_long_measurement, char (*ra
     lat_long_measurement->minutes+= CHAR_TO_NUMERIC(raw_stream_buffer, ++buffer_position) / 1000.0;
     lat_long_measurement->minutes+= CHAR_TO_NUMERIC(raw_stream_buffer, ++buffer_position) / 10000.0;
     lat_long_measurement->minutes+= CHAR_TO_NUMERIC(raw_stream_buffer, ++buffer_position) / 100000.0;
+}
+
+double NmeaParseNumericFloatingPoint(char (*raw_stream_buffer)[NMEA_RAW_BUFFER_SIZE]){
+    return atof((const char*)raw_stream_buffer);
 }

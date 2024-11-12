@@ -104,47 +104,75 @@ void M10GnssDriverRmcParser(nmea_caller_id* nmea_origin_id){
                 break;
 
             case 2:
+                if(field_metadata.field_status != VALID || field_metadata.raw_field_length != 10){
+                    m10_gnss_module->latitude.is_available = 0;
+                    continue;
+                }
+
+                NmeaParseLatLong(&(m10_gnss_module->latitude), &raw_field_data, LATITUDE);
+                m10_gnss_module->latitude.is_available = 1;
                 break;
 
             case 3:
+                if(field_metadata.field_status != VALID || field_metadata.raw_field_length != 1){
+                    continue;
+                }
+
+                m10_gnss_module->latitude.indicator = raw_field_data[0];
                 break;
 
             case 4:
+                if(field_metadata.field_status != VALID || field_metadata.raw_field_length != 11){
+                    m10_gnss_module->longitude.is_available = 0;
+                    continue;
+                }
+
+                NmeaParseLatLong(&(m10_gnss_module->longitude), &raw_field_data, LONGITUDE);
+                m10_gnss_module->longitude.is_available = 1;
                 break;
 
             case 5:
+                if(field_metadata.field_status != VALID || field_metadata.raw_field_length != 1){
+                    continue;
+                }
+
+                m10_gnss_module->longitude.indicator = raw_field_data[0];
                 break;
 
             case 6:
+                if(field_metadata.field_status != VALID){
+                    m10_gnss_module->speed_over_ground_knots.is_available = 0;
+                    continue;
+                }
+
+                m10_gnss_module->speed_over_ground_knots.value = NmeaParseNumericFloatingPoint(&raw_field_data);
+                m10_gnss_module->speed_over_ground_knots.is_available = 1;
                 break;
 
             case 7:
+                if(field_metadata.field_status != VALID){
+                    m10_gnss_module->course_over_ground.is_available = 0;
+                    continue;
+                }
+
+                m10_gnss_module->course_over_ground.value = NmeaParseNumericFloatingPoint(&raw_field_data);
+                m10_gnss_module->course_over_ground.is_available = 1;
                 break;
 
             case 8:
-                break;
+                if(field_metadata.field_status != VALID || field_metadata.raw_field_length != 6){
+                    continue;
+                }
 
-            case 9:
-                break;
-
-            case 10:
-                break;
-
-            case 11:
-                break;
-
-            case 12:
-                break;
-
-            case 13:
-                break;
-
-            case 14:
+                NmeaParseUtcDate(&(m10_gnss_module->time_of_sample), &raw_field_data);
                 break;
 
             default:
                 break;
         }
+    
+        if(field_metadata.field_status == END_OF_MESSAGE)
+            return;
     }
     
 }

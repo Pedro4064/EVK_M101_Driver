@@ -29,6 +29,9 @@ nmea_raw_field_metadata NmeaGetNextFieldRaw(m10_gnss* m10_gnss_module, char (*ra
 
 void NmeaParseUtcTime(utc_date_time* date_time, char (*raw_stream_buffer)[NMEA_RAW_BUFFER_SIZE]);
 
-void NmeaParseLatLong(gnss_lat_long_measurement* lat_long_measurement, nmea_lat_long_parser nmea_parser_option);
+void NmeaParseUtcDate(utc_date_time* date_time, char (*raw_stream_buffer)[NMEA_RAW_BUFFER_SIZE]);
 
+void NmeaParseLatLong(gnss_lat_long_measurement* lat_long_measurement, char (*raw_stream_buffer)[NMEA_RAW_BUFFER_SIZE], nmea_lat_long_parser nmea_parser_option);
+
+double NmeaParseNumericFloatingPoint(char (*raw_stream_buffer)[NMEA_RAW_BUFFER_SIZE]);
 #endif

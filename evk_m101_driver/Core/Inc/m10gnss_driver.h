@@ -19,7 +19,7 @@ typedef struct AVAILABLE_SATELITES_TABLE{
 
 typedef struct GNSS_NUMERIC_MEASUREMENT{
     char is_available;
-    float value;
+    double value;
     char unit_of_measurement;
 }  gnss_numeric_measurement;
 
