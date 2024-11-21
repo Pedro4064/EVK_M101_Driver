@@ -8,6 +8,8 @@
 #define STREAM_BUFFER_REGISTER 0xFF  // Address of the stream buffer register
 #define STREAM_BUFFER_REGISTER_SIZE 1  // Address of the stream buffer register
 
+#define STACK_BUFFER_ARRAY_SIZE 400
+
 typedef struct AVAILABLE_SATELITES_TABLE{
     unsigned char GP;
     unsigned char GL;
@@ -53,6 +55,12 @@ typedef struct M10_GNSS{
     I2C_HandleTypeDef* i2c_handle;
     int i2c_address;
 } m10_gnss;
+
+typedef struct M10_GNSS_STREAM_BUFFER{
+    unsigned char buffer[STACK_BUFFER_ARRAY_SIZE];
+    uint16_t buffer_size;
+    int buffer_index;
+} m10_gnss_stream_buffer;
 
 void M10GnssDriverInit(m10_gnss* m10_module);
 
