@@ -8,6 +8,7 @@
 #define MESSAGE_START '$'
 #define NUM_PARSING_TABLE_ENTRIES 2
 
+extern int stat;
 typedef struct NMEA_MESSAGE_PARSING_TABLE_ENTRY
 {
     nmea_caller_id message_origin;
@@ -70,10 +71,10 @@ uint16_t M10GnssDriverGetStreamBufferSize(void){
         unsigned char raw_buffer_val;
         uint16_t buffer_size = 0;
 
-        HAL_I2C_Mem_Read(m10_gnss_module->i2c_handle, m10_gnss_module->i2c_address, AVAILABLE_BUFFER_HB, STREAM_BUFFER_REGISTER_SIZE, &raw_buffer_val, 1, 1000);
+        HAL_I2C_Mem_Read(m10_gnss_module->i2c_handle, m10_gnss_module->i2c_address, AVAILABLE_BUFFER_HB, STREAM_BUFFER_REGISTER_SIZE, &raw_buffer_val, 1, 10000);
         buffer_size |= raw_buffer_val<<4;
 
-        HAL_I2C_Mem_Read(m10_gnss_module->i2c_handle, m10_gnss_module->i2c_address, AVAILABLE_BUFFER_LB, STREAM_BUFFER_REGISTER_SIZE, &raw_buffer_val, 1, 1000);
+        HAL_I2C_Mem_Read(m10_gnss_module->i2c_handle, m10_gnss_module->i2c_address, AVAILABLE_BUFFER_LB, STREAM_BUFFER_REGISTER_SIZE, &raw_buffer_val, 1, 10000);
         buffer_size |= raw_buffer_val;
         return buffer_size;
 }
@@ -82,7 +83,7 @@ void M10GnssDriverReadStreamBuffer(void){
 
         raw_stream_buffer.buffer_size = M10GnssDriverGetStreamBufferSize();
         raw_stream_buffer.buffer_size = (raw_stream_buffer.buffer_size > STACK_BUFFER_ARRAY_SIZE)?STACK_BUFFER_ARRAY_SIZE:raw_stream_buffer.buffer_size;
-        HAL_I2C_Mem_Read(m10_gnss_module->i2c_handle, m10_gnss_module->i2c_address, STREAM_BUFFER_REGISTER, STREAM_BUFFER_REGISTER_SIZE, &raw_stream_buffer.buffer, raw_stream_buffer.buffer_size, 1000);
+        HAL_I2C_Mem_Read(m10_gnss_module->i2c_handle, m10_gnss_module->i2c_address, STREAM_BUFFER_REGISTER, STREAM_BUFFER_REGISTER_SIZE, &raw_stream_buffer.buffer, raw_stream_buffer.buffer_size, 10000);
         raw_stream_buffer.buffer_index = 0;
 }
 
@@ -110,30 +111,30 @@ void M10GnssDriverParseBuffer(void){
 
 void M10GnssDriverReadData(void){
 
-    while (1)
-    {
-        M10GnssDriverReadStreamBuffer();
-        if(raw_stream_buffer.buffer_size == 0)
+    stat = 2;
+    M10GnssDriverReadStreamBuffer();
+    stat = 3;
+    if(raw_stream_buffer.buffer_size == 0)
+        return;
+
+    // If the first element is $, force the state back to idle, to avoid parsing error propagation
+    if(raw_stream_buffer.buffer[0] == '$')
+        raw_stream_buffer_parser_state = IDLE;
+
+    switch (raw_stream_buffer_parser_state){
+        case IDLE:
+            M10GnssDriverParseBuffer();
+            stat = 4;
             break;
 
-        // If the first element is $, force the state back to idle, to avoid parsing error propagation
-        if(raw_stream_buffer.buffer[0] == '$')
-            raw_stream_buffer_parser_state = IDLE;
-    
-        switch (raw_stream_buffer_parser_state){
-            case IDLE:
-                M10GnssDriverParseBuffer();
-                break;
-
-            case PARSING:
-                M10GnssDriverNmeaMessageDelegator(message_origin);
-                break;
-            
-            default:
-                break;
-        }
+        case PARSING:
+            M10GnssDriverNmeaMessageDelegator(message_origin);
+            stat = 5;
+            break;
+        
+        default:
+            break;
     }
-
 }
 
 
@@ -158,7 +159,7 @@ void M10GnssDriverRmcParser(nmea_caller_id* nmea_origin_id){
                 else if(field_metadata.field_status != VALID || field_metadata.raw_field_length != 9){
                     // If the field is not valid,  but also not en_route, just considere it as unavailable and continue parsing the next field
                     m10_gnss_module->time_of_sample.is_available = 0;
-                    continue;
+                    break;
                 }
 
                 NmeaParseUtcTime(&(m10_gnss_module->time_of_sample), &raw_field_data);
@@ -170,7 +171,7 @@ void M10GnssDriverRmcParser(nmea_caller_id* nmea_origin_id){
             case 2:
                 if(field_metadata.field_status != VALID || field_metadata.raw_field_length != 10){
                     m10_gnss_module->latitude.is_available = 0;
-                    continue;
+                    break;
                 }
 
                 NmeaParseLatLong(&(m10_gnss_module->latitude), &raw_field_data, LATITUDE);
@@ -179,7 +180,7 @@ void M10GnssDriverRmcParser(nmea_caller_id* nmea_origin_id){
 
             case 3:
                 if(field_metadata.field_status != VALID || field_metadata.raw_field_length != 1){
-                    continue;
+                    break;
                 }
 
                 m10_gnss_module->latitude.indicator = raw_field_data[0];
@@ -188,7 +189,7 @@ void M10GnssDriverRmcParser(nmea_caller_id* nmea_origin_id){
             case 4:
                 if(field_metadata.field_status != VALID || field_metadata.raw_field_length != 11){
                     m10_gnss_module->longitude.is_available = 0;
-                    continue;
+                    break;
                 }
 
                 NmeaParseLatLong(&(m10_gnss_module->longitude), &raw_field_data, LONGITUDE);
@@ -197,7 +198,7 @@ void M10GnssDriverRmcParser(nmea_caller_id* nmea_origin_id){
 
             case 5:
                 if(field_metadata.field_status != VALID || field_metadata.raw_field_length != 1){
-                    continue;
+                    break;
                 }
 
                 m10_gnss_module->longitude.indicator = raw_field_data[0];
@@ -206,7 +207,7 @@ void M10GnssDriverRmcParser(nmea_caller_id* nmea_origin_id){
             case 6:
                 if(field_metadata.field_status != VALID){
                     m10_gnss_module->speed_over_ground_knots.is_available = 0;
-                    continue;
+                    break;
                 }
 
                 m10_gnss_module->speed_over_ground_knots.value = NmeaParseNumericFloatingPoint(&raw_field_data);
@@ -216,7 +217,7 @@ void M10GnssDriverRmcParser(nmea_caller_id* nmea_origin_id){
             case 7:
                 if(field_metadata.field_status != VALID){
                     m10_gnss_module->course_over_ground.is_available = 0;
-                    continue;
+                    break;
                 }
 
                 m10_gnss_module->course_over_ground.value = NmeaParseNumericFloatingPoint(&raw_field_data);
@@ -225,7 +226,7 @@ void M10GnssDriverRmcParser(nmea_caller_id* nmea_origin_id){
 
             case 8:
                 if(field_metadata.field_status != VALID || field_metadata.raw_field_length != 6){
-                    continue;
+                    break;
                 }
 
                 NmeaParseUtcDate(&(m10_gnss_module->time_of_sample), &raw_field_data);
@@ -235,13 +236,14 @@ void M10GnssDriverRmcParser(nmea_caller_id* nmea_origin_id){
                 break;
         }
     
+        field_index++;
+
         if(field_metadata.field_status == END_OF_MESSAGE){
             field_index = 0;
             raw_stream_buffer_parser_state = IDLE;
             return;
         }
     
-        field_index++;
     }
     
 }

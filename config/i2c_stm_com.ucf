@@ -1,0 +1,37 @@
+{
+	"type": "CFG-ITEM",
+	"items": [
+		{
+			"key": "0x10510003",
+			"value": 1,
+			"layer": 0,
+			"action": "Set",
+			"valueType": "L",
+			"requestId": "2df1f974-48d4-4dc3-b2a9-cab385491765"
+		},
+		{
+			"key": "0x10720001",
+			"value": 0,
+			"layer": 0,
+			"action": "Set",
+			"valueType": "L",
+			"requestId": "d03e2a6a-9867-4711-821e-14fef7a9d143"
+		},
+		{
+			"key": "0x10720002",
+			"value": 1,
+			"layer": 0,
+			"action": "Set",
+			"valueType": "L",
+			"requestId": "0b2feaf7-9559-47b1-b78e-65a556bb70f0"
+		},
+		{
+			"key": "0x209100ab",
+			"value": 1,
+			"layer": 0,
+			"action": "Set",
+			"valueType": "U1",
+			"requestId": "5a9a8899-339d-4856-832a-9cfc8148cfda"
+		}
+	]
+}

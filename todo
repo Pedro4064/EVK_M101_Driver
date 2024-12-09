@@ -1,0 +1,7 @@
+-- GNSS ----------------------------------------------------------
+[] Implement Discard buffer functionality
+[] Implement GSV parsing functionality 
+[] Implement better loss of parsing sync recovery system
+[] Investigate hard fault
+
+-- Data Logging --------------------------------------------------
