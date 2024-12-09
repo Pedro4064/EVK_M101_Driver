@@ -68,7 +68,7 @@ void M10GnssDriverNmeaMessageDelegator(nmea_caller_id* nmea_origin_id){
 uint16_t M10GnssDriverGetStreamBufferSize(void){
         
         unsigned char raw_buffer_val;
-        uint16_t buffer_size;
+        uint16_t buffer_size = 0;
 
         HAL_I2C_Mem_Read(m10_gnss_module->i2c_handle, m10_gnss_module->i2c_address, AVAILABLE_BUFFER_HB, STREAM_BUFFER_REGISTER_SIZE, &raw_buffer_val, 1, 1000);
         buffer_size |= raw_buffer_val<<4;
@@ -84,30 +84,6 @@ void M10GnssDriverReadStreamBuffer(void){
         raw_stream_buffer.buffer_size = (raw_stream_buffer.buffer_size > STACK_BUFFER_ARRAY_SIZE)?STACK_BUFFER_ARRAY_SIZE:raw_stream_buffer.buffer_size;
         HAL_I2C_Mem_Read(m10_gnss_module->i2c_handle, m10_gnss_module->i2c_address, STREAM_BUFFER_REGISTER, STREAM_BUFFER_REGISTER_SIZE, &raw_stream_buffer.buffer, raw_stream_buffer.buffer_size, 1000);
         raw_stream_buffer.buffer_index = 0;
-}
-
-void M10GnssDriverReadData(void){
-
-    while (1)
-    {
-        M10GnssDriverReadStreamBuffer();
-        if(raw_stream_buffer.buffer_size == 0)
-            break;
-    
-        switch (raw_stream_buffer_parser_state){
-            case IDLE:
-                M10GnssDriverParseBuffer();
-                break;
-
-            case PARSING:
-                M10GnssDriverNmeaMessageDelegator(message_origin);
-                break;
-            
-            default:
-                break;
-        }
-    }
-
 }
 
 void M10GnssDriverParseBuffer(void){
@@ -131,6 +107,35 @@ void M10GnssDriverParseBuffer(void){
     }
     
 }
+
+void M10GnssDriverReadData(void){
+
+    while (1)
+    {
+        M10GnssDriverReadStreamBuffer();
+        if(raw_stream_buffer.buffer_size == 0)
+            break;
+
+        // If the first element is $, force the state back to idle, to avoid parsing error propagation
+        if(raw_stream_buffer.buffer[0] == '$')
+            raw_stream_buffer_parser_state = IDLE;
+    
+        switch (raw_stream_buffer_parser_state){
+            case IDLE:
+                M10GnssDriverParseBuffer();
+                break;
+
+            case PARSING:
+                M10GnssDriverNmeaMessageDelegator(message_origin);
+                break;
+            
+            default:
+                break;
+        }
+    }
+
+}
+
 
 void M10GnssDriverRmcParser(nmea_caller_id* nmea_origin_id){
 

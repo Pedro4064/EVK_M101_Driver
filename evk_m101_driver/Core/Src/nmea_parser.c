@@ -17,12 +17,15 @@ char NmeaParserCompareOriginId(nmea_caller_id* message_origin, nmea_caller_id* t
 }
 
 nmea_raw_field_metadata NmeaGetNextFieldRaw(m10_gnss_stream_buffer* stream_buffer, char (*raw_field_buffer)[NMEA_RAW_BUFFER_SIZE]){
-    char received_character;
-    char finished_reading;
-    char end_of_message;
-    nmea_raw_field_metadata metadata;
+    char received_character = '0';
+    char finished_reading = 0;
+    char end_of_message = 0;
+    nmea_raw_field_metadata metadata = {
+                                        .raw_field_length = 0,
+                                        .field_status = VALID
+                                    };
 
-    static int buffer_index;
+    static int buffer_index = 0;
     while(buffer_index < NMEA_RAW_BUFFER_SIZE){
 
         if(finished_reading){
@@ -53,13 +56,14 @@ nmea_raw_field_metadata NmeaGetNextFieldRaw(m10_gnss_stream_buffer* stream_buffe
         }
         else{
             (*raw_field_buffer)[buffer_index] = received_character;
-            metadata.raw_field_length = buffer_index;
+            metadata.raw_field_length = buffer_index + 1;
             buffer_index++;
         }
     
     }
 
     metadata.field_status = (end_of_message)?END_OF_MESSAGE:metadata.raw_field_length == 0;
+    buffer_index = 0;
     return metadata;
 }
 
@@ -93,7 +97,7 @@ void NmeaParseLatLong(gnss_lat_long_measurement* lat_long_measurement, char (*ra
 
     lat_long_measurement->degrees = CHAR_TO_NUMERIC(raw_field_buffer, buffer_position) * 10;
     lat_long_measurement->degrees+= CHAR_TO_NUMERIC(raw_field_buffer, ++buffer_position) * 1;
-    lat_long_measurement->degrees = (nmea_parser_option==LONGITUDE)?CHAR_TO_NUMERIC(raw_field_buffer, 0) * 100 : lat_long_measurement->degrees;
+    lat_long_measurement->degrees = (nmea_parser_option==LONGITUDE)? lat_long_measurement->degrees + CHAR_TO_NUMERIC(raw_field_buffer, 0) * 100 : lat_long_measurement->degrees;
 
     lat_long_measurement->minutes = CHAR_TO_NUMERIC(raw_field_buffer, ++buffer_position) * 10.0;
     lat_long_measurement->minutes+= CHAR_TO_NUMERIC(raw_field_buffer, ++buffer_position) * 1.0;
