@@ -83,8 +83,7 @@ void M10GnssDriverReadStreamBuffer(void){
 
         raw_stream_buffer.buffer_size = M10GnssDriverGetStreamBufferSize();
         raw_stream_buffer.buffer_size = (raw_stream_buffer.buffer_size > STACK_BUFFER_ARRAY_SIZE)?STACK_BUFFER_ARRAY_SIZE:raw_stream_buffer.buffer_size;
-        HAL_I2C_Mem_Read(m10_gnss_module->i2c_handle, m10_gnss_module->i2c_address, STREAM_BUFFER_REGISTER, STREAM_BUFFER_REGISTER_SIZE, &raw_stream_buffer.buffer, raw_stream_buffer.buffer_size, 10000);
-        raw_stream_buffer.buffer_index = 0;
+        HAL_I2C_Mem_Read_IT(m10_gnss_module->i2c_handle, m10_gnss_module->i2c_address, STREAM_BUFFER_REGISTER, STREAM_BUFFER_REGISTER_SIZE, &raw_stream_buffer.buffer, raw_stream_buffer.buffer_size);
 }
 
 void M10GnssDriverParseBuffer(void){
@@ -109,13 +108,12 @@ void M10GnssDriverParseBuffer(void){
     
 }
 
-void M10GnssDriverReadData(void){
+void M10GnssDriverHandleBufferStream(void){
 
-    stat = 2;
-    M10GnssDriverReadStreamBuffer();
-    stat = 3;
     if(raw_stream_buffer.buffer_size == 0)
         return;
+    else
+        raw_stream_buffer.buffer_index = 0;
 
     // If the first element is $, force the state back to idle, to avoid parsing error propagation
     if(raw_stream_buffer.buffer[0] == '$')
@@ -124,17 +122,16 @@ void M10GnssDriverReadData(void){
     switch (raw_stream_buffer_parser_state){
         case IDLE:
             M10GnssDriverParseBuffer();
-            stat = 4;
             break;
 
         case PARSING:
             M10GnssDriverNmeaMessageDelegator(message_origin);
-            stat = 5;
             break;
         
         default:
             break;
     }
+
 }
 
 

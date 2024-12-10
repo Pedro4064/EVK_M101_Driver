@@ -64,6 +64,7 @@ typedef struct M10_GNSS_STREAM_BUFFER{
 
 void M10GnssDriverInit(m10_gnss* m10_module);
 
-void M10GnssDriverReadData(void);
+void M10GnssDriverReadStreamBuffer(void);
 
+void M10GnssDriverHandleBufferStream(void);
 #endif
