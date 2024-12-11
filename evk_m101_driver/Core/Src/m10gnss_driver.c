@@ -42,6 +42,7 @@ nmea_caller_id message_origin;
 
 void M10GnssDriverInit(m10_gnss* m10_module){
     m10_gnss_module = m10_module;
+    M10GnssDriverClearStreamBuffer();
 }
 
 void M10GnssDriverNmeaDiscardMessage(void){
@@ -85,6 +86,18 @@ void M10GnssDriverReadStreamBuffer(void){
         HAL_I2C_Mem_Read(m10_gnss_module->i2c_handle, m10_gnss_module->i2c_address, STREAM_BUFFER_REGISTER, STREAM_BUFFER_REGISTER_SIZE, &raw_stream_buffer.buffer, raw_stream_buffer.buffer_size, 10000);
         raw_stream_buffer.buffer_index = 0;
 }
+
+void M10GnssDriverClearStreamBuffer(void){
+
+    // Clear the stream buffer, in a max of 50 tries, to avoid getting stuck
+    for (int i = 0; i < 50; i++){
+        M10GnssDriverReadStreamBuffer();
+        if(raw_stream_buffer.buffer_size == 0)
+            return;
+    }
+    
+}
+
 
 void M10GnssDriverParseBuffer(void){
     static int nmea_caller_id_index;
@@ -132,7 +145,6 @@ void M10GnssDriverReadData(void){
             break;
     }
 }
-
 
 void M10GnssDriverRmcParser(nmea_caller_id* nmea_origin_id){
 

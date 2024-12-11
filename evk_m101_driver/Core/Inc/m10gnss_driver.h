@@ -66,4 +66,5 @@ void M10GnssDriverInit(m10_gnss* m10_module);
 
 void M10GnssDriverReadData(void);
 
+void M10GnssDriverClearStreamBuffer(void);
 #endif
