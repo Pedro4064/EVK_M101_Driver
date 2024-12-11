@@ -8,7 +8,6 @@
 #define MESSAGE_START '$'
 #define NUM_PARSING_TABLE_ENTRIES 2
 
-extern int stat;
 typedef struct NMEA_MESSAGE_PARSING_TABLE_ENTRY
 {
     nmea_caller_id message_origin;
@@ -111,9 +110,8 @@ void M10GnssDriverParseBuffer(void){
 
 void M10GnssDriverReadData(void){
 
-    stat = 2;
     M10GnssDriverReadStreamBuffer();
-    stat = 3;
+
     if(raw_stream_buffer.buffer_size == 0)
         return;
 
@@ -124,12 +122,10 @@ void M10GnssDriverReadData(void){
     switch (raw_stream_buffer_parser_state){
         case IDLE:
             M10GnssDriverParseBuffer();
-            stat = 4;
             break;
 
         case PARSING:
             M10GnssDriverNmeaMessageDelegator(message_origin);
-            stat = 5;
             break;
         
         default:

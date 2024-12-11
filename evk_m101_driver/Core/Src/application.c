@@ -10,7 +10,6 @@ m10_gnss gnss_module = {
                             .i2c_handle = &hi2c1
                         };
 
-int stat = 0;
 
 void ApplicationMain(void){
 
@@ -19,10 +18,11 @@ void ApplicationMain(void){
 
     while (1)
     {
-        stat = 0;
-        HAL_GPIO_TogglePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin);
         M10GnssDriverReadData();
-        // HAL_Delay(100);
+        if(gnss_module.latitude.is_available)
+            HAL_GPIO_TogglePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin);
+
+        HAL_Delay(100);
     }
     
 }
