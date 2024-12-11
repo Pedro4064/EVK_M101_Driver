@@ -16,7 +16,8 @@ typedef struct NMEA_MESSAGE_PARSING_TABLE_ENTRY
 
 typedef enum PARSER_STATE{
     IDLE,
-    PARSING
+    PARSING, 
+    DISCARDING_MESSAGE
 } parser_state;
 
 void M10GnssDriverRmcParser(nmea_caller_id* nmea_origin_id);
@@ -46,7 +47,19 @@ void M10GnssDriverInit(m10_gnss* m10_module){
 }
 
 void M10GnssDriverNmeaDiscardMessage(void){
+    // Set the status to discarding, so in case the buffer ends the next read will start here to end the discarding
+    raw_stream_buffer_parser_state = DISCARDING_MESSAGE;
+    while(raw_stream_buffer.buffer_index < raw_stream_buffer.buffer_size){
 
+        // if the end of message character is found, break from the loop and set the state back to idle
+        // so the next message can be parsed
+        if(raw_stream_buffer.buffer[raw_stream_buffer.buffer_index] == '\n')
+            break;
+
+        raw_stream_buffer.buffer_index++;
+    }
+
+    raw_stream_buffer_parser_state = IDLE;
 }
 
 void M10GnssDriverNmeaMessageDelegator(nmea_caller_id* nmea_origin_id){
@@ -98,13 +111,9 @@ void M10GnssDriverClearStreamBuffer(void){
     
 }
 
-
-void M10GnssDriverParseBuffer(void){
+void M10GnssDriverParseNewMessage(void){
     static int nmea_caller_id_index;
-
-    while(raw_stream_buffer.buffer_index < raw_stream_buffer.buffer_size){
-
-        unsigned char stream_character = raw_stream_buffer.buffer[raw_stream_buffer.buffer_index];
+    unsigned char stream_character = raw_stream_buffer.buffer[raw_stream_buffer.buffer_index];
         raw_stream_buffer.buffer_index++;
 
         if(stream_character == '$'){
@@ -117,6 +126,31 @@ void M10GnssDriverParseBuffer(void){
             message_origin[nmea_caller_id_index] = stream_character;
             nmea_caller_id_index++;
         }
+}
+
+void M10GnssDriverParseBuffer(void){
+
+    while(raw_stream_buffer.buffer_index < raw_stream_buffer.buffer_size){
+
+        switch (raw_stream_buffer_parser_state){
+
+            case IDLE:
+                M10GnssDriverParseNewMessage();
+                break;
+
+            case PARSING:
+                M10GnssDriverNmeaMessageDelegator(message_origin);
+                break;
+        
+            case DISCARDING_MESSAGE:
+                M10GnssDriverNmeaDiscardMessage();
+                break;
+
+            default:
+                break;
+        }
+
+        
     }
     
 }
@@ -132,18 +166,8 @@ void M10GnssDriverReadData(void){
     if(raw_stream_buffer.buffer[0] == '$')
         raw_stream_buffer_parser_state = IDLE;
 
-    switch (raw_stream_buffer_parser_state){
-        case IDLE:
-            M10GnssDriverParseBuffer();
-            break;
-
-        case PARSING:
-            M10GnssDriverNmeaMessageDelegator(message_origin);
-            break;
-        
-        default:
-            break;
-    }
+    M10GnssDriverParseBuffer();
+    
 }
 
 void M10GnssDriverRmcParser(nmea_caller_id* nmea_origin_id){
