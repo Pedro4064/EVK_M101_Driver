@@ -8,12 +8,41 @@
 #define MESSAGE_START '$'
 #define NUM_PARSING_TABLE_ENTRIES 2
 
-typedef struct NMEA_MESSAGE_PARSING_TABLE_ENTRY
-{
-    nmea_caller_id message_origin;
-    void(*parser_function)(nmea_caller_id*) ;
+/**
+ * @internal
+ * @brief Entry for a caller lookup table, which relates the constellation that
+ * generated the message and type of message (called `nmea_caller_id`) and the 
+ * callback to parse the message in the NMEA format.
+ *    The `nmea_caller_id` supports wildcard  `*` for characters that do not matter 
+ *  for message -> parsing function matching, for example: 
+ * @code
+ *       `... = {
+ *        {...},
+ *        {
+ *         .message_origin = "**GSV",
+ *         .parser_function = M10GnssDriverGsvParser
+ *        }`
+ *    
+ * @endcode
+ *    In the above example, it does not matter the constellation of origin, all `GSV` messages would be parsed 
+ * by corresponding parsing function `M10GnssDriverGsvParser`.
+ *    For more information about possible constellations and all the message types supported by NMEA, check:
+ * https://content.u-blox.com/sites/default/files/u-blox-M10-SPG-5.10_InterfaceDescription_UBX-21035062.pdf
+ *
+ * @endinternal
+ */
+typedef struct NMEA_MESSAGE_PARSING_TABLE_ENTRY{
+    nmea_caller_id message_origin;              // Constellation + message type, with possible `*` wild card
+    void(*parser_function)(nmea_caller_id*) ;   // Callback to parse the message
 } nmea_message_parsing_table_entry;
 
+/**
+ * @internal
+ * @brief State of the parser, used when message slicing happens (i.e a message is broken due to buffer size
+ * limitations).
+ * 
+ * @endinternal
+ */
 typedef enum PARSER_STATE{
     IDLE,
     PARSING, 
@@ -41,11 +70,32 @@ m10_gnss_stream_buffer raw_stream_buffer;
 parser_state raw_stream_buffer_parser_state = IDLE;
 nmea_caller_id message_origin;
 
+/**
+ * @internal 
+ * @brief Initialize the M10 GNSS Driver
+ * 
+ * @param m10_module: `m10_gnss*` Pointer to an instance of m10_gnss
+ * 
+ *    Initializes the Driver by saving the pointer to the m10_gnss instance containing all the 
+ * necessary files and the handler for the I2C com.
+ *    Furthermore clears all the buffer from the Ublox module by reading it until empty, as to avoid 
+ * computing old data.
+ * @endinternal 
+ */
 void M10GnssDriverInit(m10_gnss* m10_module){
     m10_gnss_module = m10_module;
     M10GnssDriverClearStreamBuffer();
 }
 
+/**
+ * @internal 
+ * @brief Discard the message in the local buffer by incrementing the buffer index until a new line character \\n
+ * is met.
+ *    If the message was cut short (i.e the index reaches the last position before the new line character is found)
+ * the system will go into the DISCARDING_MESSAGE mode and return, this way it ensures that after the next buffer read
+ * it will resume here.
+ * @endinternal 
+ */
 void M10GnssDriverNmeaDiscardMessage(void){
     // Set the status to discarding, so in case the buffer ends the next read will start here to end the discarding
     raw_stream_buffer_parser_state = DISCARDING_MESSAGE;
@@ -62,6 +112,14 @@ void M10GnssDriverNmeaDiscardMessage(void){
     raw_stream_buffer_parser_state = IDLE;
 }
 
+/**
+ * @internal 
+ * @brief From the caller ID, delegates the parsing to the correct parsing function, established in the `nmea_message_parsing_table`
+ * lookup table, with the ability to parse `*` wildcard for characters that do not matter for message -> parsing function matching 
+ * 
+ * @param nmea_origin_id: `nmea_caller_id*` Pointer to the nmea caller id of the message.
+ * @endinternal 
+ */
 void M10GnssDriverNmeaMessageDelegator(nmea_caller_id* nmea_origin_id){
     for (int parsing_table_index = 0; parsing_table_index < NUM_PARSING_TABLE_ENTRIES; parsing_table_index++){
         nmea_message_parsing_table_entry nmea_callback_entry = nmea_message_parsing_table[parsing_table_index];
@@ -79,6 +137,13 @@ void M10GnssDriverNmeaMessageDelegator(nmea_caller_id* nmea_origin_id){
     
 }
 
+/**
+ * @internal 
+ * @brief Gets the number of bytes in the module's stream buffer.
+ * 
+ * @return uint16_t Number of bytes to be read in the buffer
+ * @endinternal 
+ */
 uint16_t M10GnssDriverGetStreamBufferSize(void){
         
         unsigned char raw_buffer_val;
@@ -92,6 +157,15 @@ uint16_t M10GnssDriverGetStreamBufferSize(void){
         return buffer_size;
 }
 
+/**
+ * @internal 
+ * @brief Read the data in the module's stream buffer through I2C.
+ *    The Maximum number of bytes to be read at one time is 400, to change this limit
+ * it is necessary to change the size of STACK_BUFFER_ARRAY_SIZE, although it is necessary to 
+ * be mindful of the available stack size.
+ * 
+ * @endinternal 
+ */
 void M10GnssDriverReadStreamBuffer(void){
 
         raw_stream_buffer.buffer_size = M10GnssDriverGetStreamBufferSize();
@@ -100,9 +174,17 @@ void M10GnssDriverReadStreamBuffer(void){
         raw_stream_buffer.buffer_index = 0;
 }
 
+/**
+ * @internal 
+ * @brief Clear the module's stream buffer.
+ *    It tries a maximum of 50 times to clear the buffer or until the stream buffer size is reported as 0
+ * by the module. This limit is a way to avoid getting stuck if, by any chance, the buffer is being filled
+ * faster than we are able to clear it.
+ * 
+ * @endinternal 
+ */
 void M10GnssDriverClearStreamBuffer(void){
 
-    // Clear the stream buffer, in a max of 50 tries, to avoid getting stuck
     for (int i = 0; i < 50; i++){
         M10GnssDriverReadStreamBuffer();
         if(raw_stream_buffer.buffer_size == 0)
@@ -111,6 +193,15 @@ void M10GnssDriverClearStreamBuffer(void){
     
 }
 
+/**
+ * @internal 
+ * @brief Parse a new message by first parsing the caller id (first 5 characters) and calling the message delegator.
+ *    If the message was cut in the middle of its caller id due to buffer size limits, it keeps track of the caller id
+ * index (used to construct a local copy of the caller id to latter be compared by the Message Delegator), and by that 
+ * in the next parsing iteration (after the buffer read call) it resumes parsing the caller id.
+ * 
+ * @endinternal 
+ */
 void M10GnssDriverParseNewMessage(void){
     static int nmea_caller_id_index;
     unsigned char stream_character = raw_stream_buffer.buffer[raw_stream_buffer.buffer_index];
@@ -128,6 +219,17 @@ void M10GnssDriverParseNewMessage(void){
         }
 }
 
+/**
+ * @internal 
+ * @brief Parse the data streamed from the module.
+ *    This function is also responsible to resume the correct parsing context based on the termination status of the  
+ * previous iteration, i.e if the last buffer was complete, it will start parsing a new message. If the last buffer  
+ * was already parsing a message, it will call the message delegator (hence the importance off the message parsing
+ * functions to be able to retain context in between calls in case of message spliting). And finally if a message 
+ * was being discarded (because no callback is listed) it shall call `M10GnssDriverNemeaDiscardMessage` at once.
+ * 
+ * @endinternal 
+ */
 void M10GnssDriverParseBuffer(void){
 
     while(raw_stream_buffer.buffer_index < raw_stream_buffer.buffer_size){
@@ -155,6 +257,12 @@ void M10GnssDriverParseBuffer(void){
     
 }
 
+/**
+ * @internal 
+ * @brief Read and parse the data on the module's stream buffer.
+ * 
+ * @endinternal 
+ */
 void M10GnssDriverReadData(void){
 
     M10GnssDriverReadStreamBuffer();
@@ -170,6 +278,14 @@ void M10GnssDriverReadData(void){
     
 }
 
+/**
+ * @internal
+ * @brief Parses NMEA messages of type RMC (Recommended minimum data), as described in the 
+ * user's manual: https://content.u-blox.com/sites/default/files/u-blox-M10-SPG-5.10_InterfaceDescription_UBX-21035062.pdf
+ * 
+ * @param nmea_origin_id: `nmea_caller_id*` pointer to the caller id (i.e the constellation) that generated the message.
+ * @endinternal
+ */
 void M10GnssDriverRmcParser(nmea_caller_id* nmea_origin_id){
 
     static char raw_field_data[20];           // Buffer containing the raw NMEA field

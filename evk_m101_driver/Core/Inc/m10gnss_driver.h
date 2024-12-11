@@ -62,9 +62,22 @@ typedef struct M10_GNSS_STREAM_BUFFER{
     int buffer_index;
 } m10_gnss_stream_buffer;
 
+/**
+ * @brief Initialize the M10 GNSS Driver.
+ * 
+ * @param m10_module: `m10_gnss*` Pointer to an instance of m10_gnss
+ */
 void M10GnssDriverInit(m10_gnss* m10_module);
 
+/**
+ * @brief Read and parse the data on the module's stream buffer.
+ * 
+ */
 void M10GnssDriverReadData(void);
 
+/**
+ * @brief Clear the module's stream buffer.
+ * 
+ */
 void M10GnssDriverClearStreamBuffer(void);
 #endif
