@@ -179,16 +179,17 @@ void M10GnssDriverRmcParser(nmea_caller_id* nmea_origin_id){
 
     while(field_index < 15){
 
+        // If parsing en route but the message was cut due to buffer size constraints, just return to ParseBuffer function with the
+        // parser state still as PARSING, and field index as 0, so it will continue the parsing here
         nmea_raw_field_metadata field_metadata = NmeaGetNextFieldRaw(&raw_stream_buffer, &raw_field_data);
+        if(field_metadata.field_status == PARSING_EN_ROUTE)
+                    return;
+
         switch (field_index){
 
             case 0:
-                if(field_metadata.field_status == PARSING_EN_ROUTE){
-                    // If parsing en route but the message was cut due to buffer size constraints, just return to ParseBuffer function with the
-                    // parser state still as PARSING, and field index as 0, so it will continue the parsing here
-                    return;
-                }
-                else if(field_metadata.field_status != VALID || field_metadata.raw_field_length != 9){
+                
+                if(field_metadata.field_status != VALID || field_metadata.raw_field_length != 9){
                     // If the field is not valid,  but also not en_route, just considere it as unavailable and continue parsing the next field
                     m10_gnss_module->time_of_sample.is_available = 0;
                     break;
