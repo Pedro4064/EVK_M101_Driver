@@ -8,7 +8,7 @@ Driver for interfacing with [ublox's M10 GNSS Chip](https://www.u-blox.com/en/pr
 Currently the driver is capable of reading the M10's stream buffer through I2C Fast Mode and parsing the received data in the NMEA format, automatically handling message slicing and loosing stream buffer sync.
 
 > [!IMPORTANT]  
-> The driver is meat to be used with the NMEA message specification, and not UBX.
+> The driver is meant to be used with the NMEA message specification, and not UBX.
 
 Currently the following NMEA messages have implemented parser functions:
 
