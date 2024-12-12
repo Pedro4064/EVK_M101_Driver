@@ -10,6 +10,11 @@
 
 #define STACK_BUFFER_ARRAY_SIZE 400
 
+/**
+ * @brief Struct to store the number of available satelites for each possible constellation, used
+ * which is possible to get by parsing the `GSV` message.
+ * 
+ */
 typedef struct AVAILABLE_SATELITES_TABLE{
     unsigned char GP;
     unsigned char GL;
@@ -19,12 +24,21 @@ typedef struct AVAILABLE_SATELITES_TABLE{
     unsigned char GQ;
 } available_satelites_table;
 
+/**
+ * @brief Base struct for all numerical measurement from the GNSS module, containing 
+ * relevant metadata.
+ * 
+ */
 typedef struct GNSS_NUMERIC_MEASUREMENT{
-    char is_available;
-    double value;
-    char unit_of_measurement;
+    char is_available;         // Check if measurement was available in the last reading
+    double value;              // Last available values
+    char unit_of_measurement;  // Engineering Unit of measurement
 }  gnss_numeric_measurement;
 
+/**
+ * @brief Struct containing UTC data time information, and relevant metadata.
+ * 
+ */
 typedef struct UTC_DATE_TIME{
     unsigned char year;
     unsigned char month;
@@ -36,6 +50,10 @@ typedef struct UTC_DATE_TIME{
     char is_available;
 } utc_date_time;
 
+/**
+ * @brief Struct to hold data from both latitude and longitude.
+ * 
+ */
 typedef struct GNSS_LAT_LONG_MEASUREMENT{
     char is_available;
     int degrees;
@@ -43,6 +61,10 @@ typedef struct GNSS_LAT_LONG_MEASUREMENT{
     char indicator;
 } gnss_lat_long_measurement;
 
+/**
+ * @brief Struct with all the necessary data for the working of the GNSS module as well as its readings.
+ * 
+ */
 typedef struct M10_GNSS{
     available_satelites_table num_available_satelites;
     gnss_lat_long_measurement latitude;
@@ -56,6 +78,10 @@ typedef struct M10_GNSS{
     int i2c_address;
 } m10_gnss;
 
+/**
+ * @brief Struct holding the received stream buffer, as well as relevant metadata for data parsing.
+ * 
+ */
 typedef struct M10_GNSS_STREAM_BUFFER{
     unsigned char buffer[STACK_BUFFER_ARRAY_SIZE];
     uint16_t buffer_size;
