@@ -20,10 +20,24 @@ On how to implement new parser functions, please check this project's wiki, whic
 
 ### Setup
 
+##### STM32
 To setup this system on the STM32 platform:
 
 1. Put the `nmea_parser.c`, `nmea_parser.h`, `m10gnss_driver.c`, and `m10gnss_driver.h` files in your project's `Src` directory.
-2. Enable the I2C peripheral.
+2. Enable the I2C peripheral (in FAST MODE).
+
+##### uBlox EVK
+It is also necessary to setup a couple of configurations on the EVK's side. To do so, you need to download uBlox's [uCenter 2](https://www.u-blox.com/en/product/u-center#:~:text=Software%20for%20u%2Dblox%20M10%20and%20F10%20products) software. 
+
+After that, you need to setup: 
+
+- `I2C` output
+- NMEA as the output format
+- The `RMC` message rate of output
+
+All this configurations need to be sent to the module after all power down. 
+
+The easies way is to use the [i2c_stm_com.ucf](./config/i2c_stm_com.ucf) config file, which already has all the configurations listed, so just load the file into uCenter2 and press `send`.
 
 ### Example Use
 
@@ -68,3 +82,6 @@ To do that, you only need to:
 - Change the `void M10GnssDriverReadStreamBuffer(void)` function, which is the one responsible for making the I2C communication to the one specific to your application, in the `m10_gnss_driver.c` file.
 - Change the `m10_gnss` struct, to either remove the handler to the I2C peripheral or use the one specific to you platform, in the `m10_gnss_driver.h` file.
 - Remove the `#include "i2c.h"` directive from the `m10_gnss_driver.h` file.
+
+> [!IMPORTANT]  
+> As state in the module's data sheet, only $I^2C$ `FAST MODE` is supported, so make sure your platform supports it, or use `UART`.
