@@ -1,0 +1,3 @@
+[submodule "docs/EVK_M101_Driver.wiki"]
+	path = docs/EVK_M101_Driver.wiki
+	url = https://github.com/Pedro4064/EVK_M101_Driver.wiki.git
